@@ -1,0 +1,3 @@
+id_producto,categoria,nombre,costo,precio,stock,stock_minimo,activa,existe,accion
+P-001,Fina,Chocolate,11.0,22,5,5,True,False,Agregar
+P-002,Mini,Fresa,1.8,5,3,5,True,False,Agregar

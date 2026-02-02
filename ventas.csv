@@ -1,0 +1,2 @@
+fecha,hora,id_producto,producto,categoria,cantidad,precio,total,descuento,metodo_pago
+2026-02-02,13:49:55,P-001,Chocolate,Fina,1,22.0,22.0,0.0,Efectivo
