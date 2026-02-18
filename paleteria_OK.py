@@ -65,7 +65,13 @@ def cargar_productos():
     # Limpiar nombres de columnas
     df.columns = df.columns.astype(str).str.strip().str.lower()
 
-    # Crear columnas si no existen
+    # --- Crear columnas si no existen ---
+    if "nombre" not in df.columns:
+        df["nombre"] = ""
+
+    if "categoria" not in df.columns:
+        df["categoria"] = ""
+
     if "precio" not in df.columns:
         df["precio"] = 0.0
 
@@ -81,16 +87,21 @@ def cargar_productos():
     if "activa" not in df.columns:
         df["activa"] = True
 
-    # Convertir tipos
+# --- Convertir tipos ---
     df["precio"] = pd.to_numeric(df["precio"], errors="coerce").fillna(0.0)
     df["costo"] = pd.to_numeric(df["costo"], errors="coerce").fillna(0.0)
     df["stock"] = pd.to_numeric(df["stock"], errors="coerce").fillna(0).astype(int)
     df["stock_minimo"] = pd.to_numeric(df["stock_minimo"], errors="coerce").fillna(5).astype(int)
-    df["activa"] = df["activa"].astype(bool)
+
+    df["activa"] = (
+        df["activa"]
+        .astype(str)
+        .str.lower()
+        .isin(["si", "true", "1"])
+    )
 
     return df
-
-
+    
 def cargar_ventas():
     sheet = conectar_sheets()
     ventas = sheet.worksheet("ventas")
@@ -350,10 +361,14 @@ if seccion == "Administrar inventario":
 
         # 7️⃣ Detectar si el producto ya existe
         def producto_existe(row):
+            if "nombre" not in df_productos.columns or "categoria" not in df_productos.columns:
+                return False
+        
             return (
-                (df_productos["nombre"].str.lower() == row["nombre"].lower()) &
-                (df_productos["categoria"].str.lower() == row["categoria"].lower())
+                (df_productos["nombre"].astype(str).str.lower() == str(row["nombre"]).lower()) &
+                (df_productos["categoria"].astype(str).str.lower() == str(row["categoria"]).lower())
             ).any()
+
 
 
         df_nuevos["existe"] = df_nuevos.apply(producto_existe, axis=1)
@@ -1398,6 +1413,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
