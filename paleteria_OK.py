@@ -7,12 +7,27 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import os
 import plotly.express as px
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+@st.cache_resource
+def conectar_sheets():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        st.secrets["gcp_service_account"],
+        scope
+    )
+
+    client = gspread.authorize(creds)
+    return client.open("Paleteria_DB")
 
 # ============================================
 # Archivos y catálogos
 # ============================================
-CATALOGO_FILE = "inventario.csv"
-VENTAS_FILE = "ventas.csv"
 
 CATEGORIAS_PRODUCTOS = [
     "Piramide",
@@ -38,21 +53,11 @@ def guardar_productos(df: pd.DataFrame):
     df.to_csv(CATALOGO_FILE, index=False)
     
 def cargar_productos():
-    if not os.path.exists(CATALOGO_FILE):
-        return pd.DataFrame(
-            columns=[
-                "id_producto",
-                "categoria",
-                "nombre",
-                "costo",
-                "precio",
-                "stock",
-                "stock_minimo",
-                "activa",
-            ]
-        )
+    sheet = conectar_sheets()
+    productos = sheet.worksheet("productos")
+    data = productos.get_all_records()
 
-    df = pd.read_csv(CATALOGO_FILE)
+    df = pd.DataFrame(data)
 
     if "stock_minimo" not in df.columns:
         df["stock_minimo"] = 5
@@ -64,55 +69,49 @@ def cargar_productos():
     df["costo"] = pd.to_numeric(df["costo"], errors="coerce").fillna(0.0)
     df["stock"] = pd.to_numeric(df["stock"], errors="coerce").fillna(0).astype(int)
     df["stock_minimo"] = pd.to_numeric(df["stock_minimo"], errors="coerce").fillna(5).astype(int)
+
+    if "activa" not in df.columns:
+        df["activa"] = True
+
     df["activa"] = df["activa"].astype(bool)
 
     return df
 
+
 def cargar_ventas():
-    """Carga historial de ventas."""
-    if os.path.exists(VENTAS_FILE):
-        df = pd.read_csv(VENTAS_FILE)
+    sheet = conectar_sheets()
+    ventas = sheet.worksheet("ventas")
+    data = ventas.get_all_records()
 
-        # Compatibilidad: si viene columna 'paleta'
-        if "producto" not in df.columns and "paleta" in df.columns:
-            df.rename(columns={"paleta": "producto"}, inplace=True)
+    df = pd.DataFrame(data)
 
-        # Asegurar columnas
-        if "categoria" not in df.columns:
-            df["categoria"] = "Sin categoría"
-        if "descuento" not in df.columns:
-            df["descuento"] = 0.0
-        if "id_producto" not in df.columns:
-            df.insert(2, "id_producto", "")
+    if df.empty:
+        return pd.DataFrame(
+            columns=[
+                "fecha",
+                "hora",
+                "id_producto",
+                "producto",
+                "categoria",
+                "cantidad",
+                "precio",
+                "total",
+                "descuento",
+                "metodo_pago",
+            ]
+        )
 
-        # Tipos numéricos
-        for col in ["cantidad", "precio", "total", "descuento"]:
-            if col in df.columns:
-                df[col] = pd.to_numeric(
-                    df[col], errors="coerce"
-                ).fillna(0.0)
+    # Tipos numéricos
+    for col in ["cantidad", "precio", "total", "descuento"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
 
-        return df
+    return df
 
-    return pd.DataFrame(
-        columns=[
-            "fecha",
-            "hora",
-            "id_producto",
-            "producto",
-            "categoria",
-            "cantidad",
-            "precio",
-            "total",
-            "descuento",
-            "metodo_pago",
-        ]
-    )
-
-
-def guardar_ventas(df: pd.DataFrame):
-    df.to_csv(VENTAS_FILE, index=False)
-
+def guardar_venta(fila):
+    sheet = conectar_sheets()
+    ventas = sheet.worksheet("ventas")
+    ventas.append_row(fila)
 
 def generar_ticket_pdf(ticket: dict) -> BytesIO:
     """
@@ -170,10 +169,17 @@ def generar_ticket_pdf(ticket: dict) -> BytesIO:
     c.save()
     buffer.seek(0)
     return buffer
+
+def eliminar_venta_sheet(indice_fila):
+    sheet = conectar_sheets()
+    ventas = sheet.worksheet("ventas")
+    ventas.delete_rows(indice_fila)
+
 # ============================================
 # Configuración de página
 # ============================================
 st.set_page_config(
+    
     page_title="Mini POS de Productos",
     page_icon="🧾",
     layout="wide",
@@ -206,11 +212,15 @@ if rol == "Administrador":
         "Registrar venta",
         "Administrar inventario",
         "Reportes",
+        "Eliminar venta",
+
     ]
 else:
     opciones_menu = [
         "Registrar venta",
         "Reportes",
+        "Eliminar venta",
+
     ]
 
 seccion = st.sidebar.selectbox(
@@ -1339,3 +1349,32 @@ elif seccion == "Reportes":
                         fig_dia_cant,
                         use_container_width=True
                     )
+###---NUEVA SECCION--- ####
+elif seccion == "Eliminar venta":
+    st.subheader("🗑️ Eliminar venta registrada")
+
+    df_ventas = cargar_ventas()
+
+    if df_ventas.empty:
+        st.info("No hay ventas registradas.")
+    else:
+        df_ventas_reset = df_ventas.reset_index()
+
+        st.dataframe(df_ventas_reset, use_container_width=True)
+
+        opcion = st.selectbox(
+            "Selecciona la venta a eliminar",
+            df_ventas_reset.index,
+            format_func=lambda x: (
+                f"{df_ventas_reset.loc[x,'fecha']} | "
+                f"{df_ventas_reset.loc[x,'producto']} | "
+                f"${df_ventas_reset.loc[x,'total']}"
+            )
+        )
+
+        if st.button("Eliminar venta seleccionada"):
+            fila_sheet = int(opcion) + 2  # encabezado + base 1
+            eliminar_venta_sheet(fila_sheet)
+
+            st.success("Venta eliminada correctamente.")
+            st.rerun()
