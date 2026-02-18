@@ -143,10 +143,17 @@ def cargar_ventas():
 
     return df
 
-def guardar_venta(fila):
+def guardar_ventas(df):
     sheet = conectar_sheets()
     ventas = sheet.worksheet("ventas")
-    ventas.append_row(fila)
+
+    ventas.clear()
+
+    df = df.fillna("")
+
+    datos = [df.columns.tolist()] + df.values.tolist()
+
+    ventas.update("A1", datos)
 
 def generar_ticket_pdf(ticket: dict) -> BytesIO:
     """
@@ -1424,6 +1431,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
