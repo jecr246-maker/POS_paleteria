@@ -50,11 +50,20 @@ CATEGORIAS_PRODUCTOS = [
 # Funciones auxiliares
 # ============================================
 
+def guardar_productos(df):
+    sheet = conectar_sheets()
+    productos = sheet.worksheet("productos")
 
-    
-def guardar_productos(df: pd.DataFrame):
-    df.to_csv(CATALOGO_FILE, index=False)
-    
+    # Limpiar hoja
+    productos.clear()
+
+    # Escribir encabezados
+    productos.append_row(df.columns.tolist())
+
+    # Escribir datos
+    for fila in df.values.tolist():
+        productos.append_row(fila)
+        
 def cargar_productos():
     sheet = conectar_sheets()
     productos = sheet.worksheet("productos")
@@ -1413,6 +1422,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
