@@ -54,15 +54,13 @@ def guardar_productos(df):
     sheet = conectar_sheets()
     productos = sheet.worksheet("productos")
 
-    # Limpiar hoja
     productos.clear()
 
-    # Escribir encabezados
+    # Encabezados
     productos.append_row(df.columns.tolist())
 
-    # Escribir datos
-    for fila in df.values.tolist():
-        productos.append_row(fila)
+    # Datos
+    productos.append_rows(df.values.tolist())
         
 def cargar_productos():
     sheet = conectar_sheets()
@@ -1422,6 +1420,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
