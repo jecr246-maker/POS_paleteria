@@ -16,6 +16,8 @@ def conectar_sheets():
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
+    
+st.write(st.secrets["gcp_service_account"]["client_email"])
 
     creds = ServiceAccountCredentials.from_json_keyfile_dict(
         st.secrets["gcp_service_account"],
@@ -1379,6 +1381,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
