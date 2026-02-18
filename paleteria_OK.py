@@ -61,7 +61,7 @@ def cargar_productos():
     data = productos.get_all_records()
 
     df = pd.DataFrame(data)
-    df.columns = df.columns.str.strip().str.lower()
+    df.columns = df.columns.astype(str).str.strip().str.lower()
 
     if "stock_minimo" not in df.columns:
         df["stock_minimo"] = 5
@@ -1384,6 +1384,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
