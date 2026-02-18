@@ -61,28 +61,35 @@ def cargar_productos():
     data = productos.get_all_records()
 
     df = pd.DataFrame(data)
+
+    # Limpiar nombres de columnas
     df.columns = df.columns.astype(str).str.strip().str.lower()
 
-    if "stock_minimo" not in df.columns:
-        df["stock_minimo"] = 5
+    # Crear columnas si no existen
+    if "precio" not in df.columns:
+        df["precio"] = 0.0
 
     if "costo" not in df.columns:
         df["costo"] = 0.0
 
-    if "precio" not in df.columns:
-        df["precio"] = 0.0
+    if "stock" not in df.columns:
+        df["stock"] = 0
 
-    df["precio"] = pd.to_numeric(df["precio"], errors="coerce").fillna(0.0)
-    df["costo"] = pd.to_numeric(df["costo"], errors="coerce").fillna(0.0)
-    df["stock"] = pd.to_numeric(df["stock"], errors="coerce").fillna(0).astype(int)
-    df["stock_minimo"] = pd.to_numeric(df["stock_minimo"], errors="coerce").fillna(5).astype(int)
+    if "stock_minimo" not in df.columns:
+        df["stock_minimo"] = 5
 
     if "activa" not in df.columns:
         df["activa"] = True
 
+    # Convertir tipos
+    df["precio"] = pd.to_numeric(df["precio"], errors="coerce").fillna(0.0)
+    df["costo"] = pd.to_numeric(df["costo"], errors="coerce").fillna(0.0)
+    df["stock"] = pd.to_numeric(df["stock"], errors="coerce").fillna(0).astype(int)
+    df["stock_minimo"] = pd.to_numeric(df["stock_minimo"], errors="coerce").fillna(5).astype(int)
     df["activa"] = df["activa"].astype(bool)
 
     return df
+
 
 def cargar_ventas():
     sheet = conectar_sheets()
@@ -1384,6 +1391,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
