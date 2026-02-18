@@ -313,7 +313,7 @@ if seccion == "Administrar inventario":
             encoding="latin-1"
         )
 
-        df_nuevos.columns = df_nuevos.columns.str.lower().str.strip()
+        df_nuevos.columns = df_nuevos.columns.astype(str).str.strip().str.lower()
 
         # 4️⃣ Validar columnas obligatorias
         columnas_requeridas = ["categoria", "nombre", "costo", "precio", "stock"]
@@ -326,10 +326,16 @@ if seccion == "Administrar inventario":
         # 5️⃣ Columnas opcionales con valores por defecto
         if "stock_minimo" not in df_nuevos.columns:
             df_nuevos["stock_minimo"] = 5
-
+        
         if "activa" not in df_nuevos.columns:
             df_nuevos["activa"] = True
-
+        else:
+            df_nuevos["activa"] = (
+                df_nuevos["activa"]
+                .astype(str)
+                .str.lower()
+                .isin(["si", "true", "1"])
+            )
         if "id_producto" not in df_nuevos.columns:
             df_nuevos["id_producto"] = ""
 
@@ -346,8 +352,9 @@ if seccion == "Administrar inventario":
         def producto_existe(row):
             return (
                 (df_productos["nombre"].str.lower() == row["nombre"].lower()) &
-                (df_productos["categoria"] == row["categoria"])
+                (df_productos["categoria"].str.lower() == row["categoria"].lower())
             ).any()
+
 
         df_nuevos["existe"] = df_nuevos.apply(producto_existe, axis=1)
 
@@ -1391,6 +1398,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
