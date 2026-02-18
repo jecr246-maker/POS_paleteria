@@ -23,7 +23,8 @@ def conectar_sheets():
     )
 
     client = gspread.authorize(creds)
-    return client.open("paleteria-bot@paleteria-app-487721.iam.gserviceaccount.com")
+    return client.open_by_url(
+    "https://docs.google.com/spreadsheets/d/1gBNATNp8eYb2m0kPoInfbkuQHmjIVdD21x2LNxnOlbk/edit"
 
 # ============================================
 # Archivos y catálogos
@@ -1378,4 +1379,5 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
