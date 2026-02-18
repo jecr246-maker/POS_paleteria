@@ -61,12 +61,16 @@ def cargar_productos():
     data = productos.get_all_records()
 
     df = pd.DataFrame(data)
+    df.columns = df.columns.str.strip().str.lower()
 
     if "stock_minimo" not in df.columns:
         df["stock_minimo"] = 5
 
     if "costo" not in df.columns:
         df["costo"] = 0.0
+
+    if "precio" not in df.columns:
+        df["precio"] = 0.0
 
     df["precio"] = pd.to_numeric(df["precio"], errors="coerce").fillna(0.0)
     df["costo"] = pd.to_numeric(df["costo"], errors="coerce").fillna(0.0)
@@ -79,7 +83,6 @@ def cargar_productos():
     df["activa"] = df["activa"].astype(bool)
 
     return df
-
 
 def cargar_ventas():
     sheet = conectar_sheets()
@@ -1381,6 +1384,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
