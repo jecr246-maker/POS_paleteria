@@ -10,7 +10,7 @@ import plotly.express as px
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-@st.cache_resource
+#@st.cache_resource
 def conectar_sheets():
     scope = [
         "https://spreadsheets.google.com/feeds",
@@ -1381,6 +1381,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
