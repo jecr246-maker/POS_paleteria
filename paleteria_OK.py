@@ -226,7 +226,7 @@ def generar_ticket_pdf(ticket: dict) -> BytesIO:
     y -= 20
 
     # TOTAL GENERAL 
-    c.setFont("Helvetica-Bold", 14)
+    c.setFont("Helvetica-Bold", 12)
     c.drawString(50, y, f"TOTAL A PAGAR: ${ticket['total']:.2f}")
     y -= 25
 
@@ -927,6 +927,7 @@ elif seccion == "Registrar venta":
                         max_value=stock_disp,
                         step=1,
                         format="%d",
+                        key="cantidad"
                     )
                     
                     st.markdown("### Ajustes del producto")
@@ -937,6 +938,7 @@ elif seccion == "Registrar venta":
                         max_value=precio_unit * cantidad,
                         step=1.0,
                         value=0.0,
+                        key="descuento_item"
                     )
 
                     extra_item = st.number_input(
@@ -944,7 +946,9 @@ elif seccion == "Registrar venta":
                         min_value=0.0,
                         step=1.0,
                         value=0.0,
+                        key="extra_item"
                     )
+                    
                     btn_agregar = st.button("Agregar al carrito")
 
             if btn_agregar and cantidad > 0:
@@ -963,7 +967,10 @@ elif seccion == "Registrar venta":
                 st.success(
                     f"Se agregaron {cantidad} x {producto_sel} al carrito."
                 )
-
+            st.session_state["descuento_item"] = 0.0
+            st.session_state["extra_item"] = 0.0
+            st.session_state["cantidad"] = 1  # opcional
+            st.rerun()
         # ----------------------------------------
         # Carrito actual
         # ----------------------------------------
@@ -1494,6 +1501,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
