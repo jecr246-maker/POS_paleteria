@@ -967,10 +967,10 @@ elif seccion == "Registrar venta":
                 st.success(
                     f"Se agregaron {cantidad} x {producto_sel} al carrito."
                 )
-            st.session_state["descuento_item"] = 0.0
-            st.session_state["extra_item"] = 0.0
-            st.session_state["cantidad"] = 1  # opcional
-            st.rerun()
+                for key in ["descuento_item", "extra_item", "cantidad"]:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.rerun()
         # ----------------------------------------
         # Carrito actual
         # ----------------------------------------
@@ -1501,6 +1501,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
