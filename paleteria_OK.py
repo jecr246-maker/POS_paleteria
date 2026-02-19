@@ -225,15 +225,22 @@ def generar_ticket_pdf(ticket: dict) -> BytesIO:
         y -= 10
         c.line(50, y, width - 50, y)
         y -= 20
+        c.setFont("Helvetica", 10)
+        
+        # Línea separadora final
+        
+        y -= 10
+        c.line(50, y, width - 50, y)
+        y -= 20
 
-        # Total general
+        # TOTAL GENERAL 
         c.setFont("Helvetica-Bold", 14)
         c.drawString(50, y, f"TOTAL A PAGAR: ${ticket['total']:.2f}")
         y -= 25
 
-        c.setFont("Helvetica", 10)     
-    c.drawString(50, y, "¡Gracias por su compra!")
-
+        c.setFont("Helvetica", 10)
+        c.drawString(50, y, "¡Gracias por su compra!")
+        
     c.showPage()
     c.save()
     buffer.seek(0)
@@ -1495,6 +1502,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
