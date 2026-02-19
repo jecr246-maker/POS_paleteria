@@ -1315,6 +1315,15 @@ elif seccion == "Reportes":
                 # 📦 Grafica VENTAS por categoría (Cantidad)
                 # ----------------------------------------
 
+                st.markdown("### 📦 Ventas por categoría (Cantidad)")
+                ventas_categoria = (
+                    df_dia
+                    .groupby("categoria", as_index=False)["cantidad"]
+                    .sum()
+                    .rename(columns={"cantidad": "cantidad_vendida"})
+                    .sort_values("cantidad_vendida", ascending=False)
+                )
+
                 fig = px.bar(
                     ventas_categoria,
                     x="categoria",
@@ -1328,52 +1337,46 @@ elif seccion == "Reportes":
                 )
 
                 st.plotly_chart(fig, use_container_width=True)
-                
-                st.markdown("### 📦 Ventas por categoría (Cantidad)")
 
-                col1, col2 = st.columns([2, 1])
+                # Tabla al lado o debajo
+                st.dataframe(ventas_categoria, use_container_width=True)
 
-                with col1:
-                    st.bar_chart(
-                        ventas_categoria.set_index("categoria")["cantidad_vendida"]
-                    )
-
-                with col2:
-                    st.dataframe(
-                        ventas_categoria,
-                        use_container_width=True
-                    )
                 # ----------------------------------------
                 # 💰 Grafica IINGRESOS por categoría
                 # ----------------------------------------
 
                 ingresos_categoria = (
                     df_dia
-                    .groupby("categoria", as_index=False)
-                    .agg(
-                        total_generado=("total", "sum")
-                    )
-                    .sort_values("total_generado", ascending=False)
+                    .groupby("categoria", as_index=False)["total"]
+                    .sum()
+                    .rename(columns={"total": "ingresos"})
+                    .sort_values("ingresos", ascending=False)
+                )
+                st.markdown("### 📦 Ingresos por categoría ($)")
+                
+                fig_ing = px.bar(
+                    ingresos_categoria,
+                    x="categoria",
+                    y="ingresos",
+                    text="ingresos",
                 )
 
-                st.markdown("### 💰 Ingresos por categoría")
+                # Formato de texto encima de barras
+                fig_ing.update_traces(
+                    texttemplate="$%{text:,.2f}",
+                    textposition="outside"
+                )
 
-                col3, col4 = st.columns([2, 1])
+                # Formato de eje Y como moneda
+                fig_ing.update_layout(
+                    xaxis_title="Categoría",
+                    yaxis_title="Ingresos ($ MXN)",
+                    yaxis_tickprefix="$",
+                    yaxis_tickformat=",.2f"
+                )
 
-                with col3:
-                    st.bar_chart(
-                        ingresos_categoria.set_index("categoria")["total_generado"]
-                    )
+                st.plotly_chart(fig_ing, use_container_width=True)
 
-                with col4:
-                    ingresos_categoria["total_generado"] = ingresos_categoria["total_generado"].apply(
-                        lambda x: f"${x:,.2f}"
-                    )
-
-                    st.dataframe(
-                        ingresos_categoria,
-                        use_container_width=True
-                    )
         # =========================
         # 2) ANÁLISIS POR RANGO
         # =========================
@@ -1618,6 +1621,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
