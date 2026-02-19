@@ -1476,6 +1476,7 @@ elif seccion == "Reportes":
                     col3.metric(
                         "Total generado",
                         f"${producto_top['total_generado']:,.2f}"
+                    )
                         ##########
                     # Columna combinada
                     df_rango["categoria_producto"] = (
@@ -1681,6 +1682,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
