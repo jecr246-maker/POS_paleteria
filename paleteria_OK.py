@@ -1442,7 +1442,7 @@ elif seccion == "Reportes":
                 st.markdown("**Totales por método de pago**")
                 st.table(resumen_metodo)
                 # ----------------------------------------
-                # 🏆 Producto más vendido del mes
+                # 🏆 Producto más vendido del rango seleccionado
                 # ----------------------------------------
 
                 if not df_rango.empty:
@@ -1458,7 +1458,7 @@ elif seccion == "Reportes":
                         .iloc[0]
                     )
 
-                    st.markdown("### 🏆 Producto más vendido del mes")
+                    st.markdown("### 🏆 Producto más vendido del rango seleccionado")
 
                     col1, col2, col3 = st.columns(3)
 
@@ -1682,6 +1682,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
