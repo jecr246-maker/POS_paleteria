@@ -1423,7 +1423,60 @@ elif seccion == "Reportes":
                     st.markdown(
                         f"Ventas del **{f_ini}** al **{f_fin}**"
                     )
+                    ######
+                    resumen_metodo = (
+                    df_dia
+                    .groupby("metodo_pago", as_index=False)
+                    .agg(
+                        total_venta=("total", "sum"),
+                        productos_vendidos=("cantidad", "sum"),
+                    )
+                    .sort_values("total_venta", ascending=False)
+                )
 
+                # Formato moneda
+                resumen_metodo["total_venta"] = resumen_metodo["total_venta"].apply(
+                    lambda x: f"${x:,.2f}"
+                )
+
+                st.markdown("**Totales por método de pago**")
+                st.table(resumen_metodo)
+                # ----------------------------------------
+                # 🏆 Producto más vendido del día
+                # ----------------------------------------
+
+                if not df_dia.empty:
+
+                    producto_top = (
+                        df_dia
+                        .groupby(["id_producto", "producto", "categoria"], as_index=False)
+                        .agg(
+                            cantidad_vendida=("cantidad", "sum"),
+                            total_generado=("total", "sum"),
+                        )
+                        .sort_values("cantidad_vendida", ascending=False)
+                        .iloc[0]
+                    )
+
+                    st.markdown("### 🏆 Producto más vendido del día")
+
+                    col1, col2, col3 = st.columns(3)
+
+                    col1.metric(
+                        "Producto",
+                        f"{producto_top['categoria']} - {producto_top['producto']}"
+                    )
+
+
+                    col2.metric(
+                        "Cantidad vendida",
+                        int(producto_top["cantidad_vendida"])
+                    )
+
+                    col3.metric(
+                        "Total generado",
+                        f"${producto_top['total_generado']:,.2f}"
+                        ##########
                     # Columna combinada
                     df_rango["categoria_producto"] = (
                         df_rango["categoria"]
@@ -1628,6 +1681,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
