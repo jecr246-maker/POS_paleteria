@@ -45,7 +45,6 @@ CATEGORIAS_PRODUCTOS = [
     "Congelada",
     "Otros",
 ]
-
 # ============================================
 # Funciones auxiliares
 # ============================================
@@ -130,8 +129,9 @@ def cargar_ventas():
                 "categoria",
                 "cantidad",
                 "precio",
-                "total",
                 "descuento",
+                "extra",
+                "total",
                 "metodo_pago",
             ]
         )
@@ -181,28 +181,64 @@ def generar_ticket_pdf(ticket: dict) -> BytesIO:
     c.setFont("Helvetica", 10)
 
     for item in ticket["items"]:
-        linea = (
-            f"- {item['categoria']} - {item['producto']}  "
-            f"x{item['cantidad']}  "
-            f"${item['precio']:.2f}  "
-            f"Subtotal: ${item['subtotal']:.2f}"
+
+        linea1 = (
+            f"- ID: {item['id_producto']} | "
+            f"{item['categoria']} - {item['producto']}"
         )
-        if y < 70:
+
+        linea2 = (
+            f"  Cant: {item['cantidad']}  "
+            f"Precio: ${item['precio']:.2f}"
+        )
+
+        linea3 = ""
+
+        if item.get("extra", 0) > 0:
+            linea3 += f"  Extra: +${item['extra']:.2f}"
+
+        if item.get("descuento", 0) > 0:
+            linea3 += f"  Descuento: -${item['descuento']:.2f}"
+
+        if y < 100:
+            c.showPage()
+            y = height - 50
+
+        c.setFont("Helvetica", 10)
+        c.drawString(50, y, linea1)
+        y -= 15
+
+        c.drawString(50, y, linea2)
+        y -= 15
+
+        if linea3:
+            c.drawString(50, y, linea3)
+            y -= 15
+
+        # 🔥 Total resaltado
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(50, y, f"Total a pagar: ${item['subtotal']:.2f}")
+        y -= 20
+
+        c.setFont("Helvetica", 10)
+
+        if y < 90:
             c.showPage()
             y = height - 50
             c.setFont("Helvetica", 10)
 
-        c.drawString(50, y, linea)
+        c.drawString(50, y, linea1)
+        y -= 15
+        c.drawString(50, y, linea2)
         y -= 15
 
-    y -= 10
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(50, y, f"Total bruto: ${ticket['total_bruto']:.2f}")
-    y -= 15
-    c.drawString(50, y, f"Descuento:   -${ticket['descuento']:.2f}")
-    y -= 15
-    c.drawString(50, y, f"Total a pagar: ${ticket['total']:.2f}")
-    y -= 30
+        if linea3:
+            c.drawString(50, y, linea3)
+            y -= 15
+
+        c.drawString(50, y, linea4)
+        y -= 20
+
 
     c.setFont("Helvetica-Oblique", 9)
     c.drawString(50, y, "¡Gracias por su compra!")
@@ -216,7 +252,6 @@ def eliminar_venta_sheet(indice_fila):
     sheet = conectar_sheets()
     ventas = sheet.worksheet("ventas")
     ventas.delete_rows(indice_fila)
-
 # ============================================
 # Configuración de página
 # ============================================
@@ -903,9 +938,24 @@ elif seccion == "Registrar venta":
                         step=1,
                         format="%d",
                     )
+                    descuento_item = st.number_input(
+                        "Descuento para este producto",
+                        min_value=0.0,
+                        max_value=precio_unit * cantidad,
+                        step=1.0,
+                        value=0.0,
+                    )
+
+                    extra_item = st.number_input(
+                        "Extra / Recargo para este producto",
+                        min_value=0.0,
+                        step=1.0,
+                        value=0.0,
+                    )
                     btn_agregar = st.button("Agregar al carrito")
 
             if btn_agregar and cantidad > 0:
+                
                 st.session_state["carrito"].append(
                     {
                         "id_producto": id_producto,
@@ -913,6 +963,8 @@ elif seccion == "Registrar venta":
                         "producto": producto_sel,
                         "cantidad": int(cantidad),
                         "precio": precio_unit,
+                         "descuento": descuento_item,
+                        "extra": extra_item,
                     }
                 )
                 st.success(
@@ -929,8 +981,11 @@ elif seccion == "Registrar venta":
             st.info("El carrito está vacío.")
         else:
             df_carrito = pd.DataFrame(st.session_state["carrito"])
+            
             df_carrito["subtotal"] = (
                 df_carrito["cantidad"] * df_carrito["precio"]
+                + df_carrito["extra"]
+                - df_carrito["descuento"]
             )
 
             df_carrito_mostrar = df_carrito[
@@ -940,6 +995,8 @@ elif seccion == "Registrar venta":
                     "producto",
                     "cantidad",
                     "precio",
+                    "extra",
+                    "descuento",
                     "subtotal",
                 ]
             ]
@@ -950,6 +1007,18 @@ elif seccion == "Registrar venta":
             )
 
             total_bruto = float(df_carrito["subtotal"].sum())
+            st.markdown("### 🗑 Eliminar producto del carrito")
+
+            for i, row in df_carrito.iterrows():
+                col1, col2 = st.columns([4,1])
+
+                with col1:
+                    st.write(f"{row['producto']} x{row['cantidad']}")
+
+                with col2:
+                    if st.button("Eliminar", key=f"del_{i}"):
+                        st.session_state["carrito"].pop(i)
+                        st.rerun()
 
             # ----------------------------------------
             # Descuento
@@ -1028,74 +1097,75 @@ elif seccion == "Registrar venta":
                             item["cantidad"]
                         )
 
-                    guardar_productos(df_prod_local)
+                guardar_productos(df_prod_local)
 
-                    # Registrar ventas
-                    ahora = datetime.now()
-                    hora_str = ahora.strftime("%H:%M:%S")
-                    fecha_str = fecha_venta.isoformat()
+                # Registrar ventas
+                ahora = datetime.now()
+                hora_str = ahora.strftime("%H:%M:%S")
+                fecha_str = fecha_venta.isoformat()
 
-                    filas = []
-                    for _, item in df_carrito.iterrows():
-                        proporcion = (
-                            item["subtotal"] / total_bruto
-                            if total_bruto > 0
-                            else 0
-                        )
-                        desc_item = round(
-                            descuento * proporcion, 2
-                        )
+                filas = []
 
-                        filas.append(
-                            {
-                                "fecha": fecha_str,
-                                "hora": hora_str,
-                                "id_producto": item["id_producto"],
-                                "producto": item["producto"],
-                                "categoria": item["categoria"],
-                                "cantidad": int(item["cantidad"]),
-                                "precio": float(item["precio"]),
-                                "total": float(item["subtotal"]) - desc_item,
-                                "descuento": desc_item,
-                                "metodo_pago": metodo_pago,
-                            }
-                        )
+                for _, item in df_carrito.iterrows():
 
-                    df_ventas = pd.concat(
-                        [df_ventas, pd.DataFrame(filas)],
-                        ignore_index=True
-                    )
-                    guardar_ventas(df_ventas)
-
-                    ticket_data = {
-                        "fecha": fecha_str,
-                        "hora": hora_str,
-                        "metodo_pago": metodo_pago,
-                        "total_bruto": total_bruto,
-                        "descuento": descuento,
-                        "total": total_final,
-                        "items": df_carrito_mostrar.to_dict(
-                            orient="records"
-                        ),
-                    }
-
-                    buffer_pdf = generar_ticket_pdf(ticket_data)
-
-                    st.success(
-                        f"Venta registrada por ${total_final:,.2f}"
-                    )
-                    st.balloons()
-
-                    st.download_button(
-                        "🧾 Descargar ticket en PDF",
-                        buffer_pdf,
-                        file_name=(
-                            f"ticket_{ahora.strftime('%Y%m%d_%H%M%S')}.pdf"
-                        ),
-                        mime="application/pdf",
+                    subtotal_item = (
+                        float(item["cantidad"]) * float(item["precio"])
+                        + float(item["extra"])
+                        - float(item["descuento"])
                     )
 
-                    st.session_state["carrito"] = []
+                    filas.append(
+                        {
+                            "fecha": fecha_str,
+                            "hora": hora_str,
+                            "id_producto": item["id_producto"],
+                            "producto": item["producto"],
+                            "categoria": item["categoria"],
+                            "cantidad": int(item["cantidad"]),
+                            "precio": float(item["precio"]),
+                            "extra": float(item["extra"]),
+                            "descuento": float(item["descuento"]),
+                            "total": subtotal_item,
+                            "metodo_pago": metodo_pago,
+                        }
+                    )
+
+                df_ventas = pd.concat(
+                    [df_ventas, pd.DataFrame(filas)],
+                    ignore_index=True
+                )
+                guardar_ventas(df_ventas)
+
+                ticket_data = {
+                    "fecha": fecha_str,
+                    "hora": hora_str,
+                    "metodo_pago": metodo_pago,
+                    "total_bruto": total_bruto,
+                    "descuento": descuento,
+                    "total": total_final,
+                    "items": df_carrito_mostrar.to_dict(
+                        orient="records"
+                    ),
+                }
+
+                buffer_pdf = generar_ticket_pdf(ticket_data)
+
+                st.success(
+                    f"Venta registrada por ${total_final:,.2f}"
+                )
+                st.balloons()
+
+                st.download_button(
+                    "🧾 Descargar ticket en PDF",
+                    buffer_pdf,
+                    file_name=(
+                        f"ticket_{ahora.strftime('%Y%m%d_%H%M%S')}.pdf"
+                    ),
+                    mime="application/pdf",
+                )
+
+                st.session_state["carrito"] = []
+
 # ============================================
 # Sección: REPORTES
 # ============================================
@@ -1431,6 +1501,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
