@@ -1378,7 +1378,7 @@ elif seccion == "Reportes":
                 st.plotly_chart(fig_ing, use_container_width=True)
                 
                 # Tabla al lado o debajo
-                st.dataframe(ventas_categoria, use_container_width=True)
+                st.dataframe(ingresos_categoria, use_container_width=True)
         # =========================
         # 2) ANÁLISIS POR RANGO
         # =========================
@@ -1623,6 +1623,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
