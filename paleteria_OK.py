@@ -934,7 +934,7 @@ elif seccion == "Registrar venta":
                         max_value=stock_disp,
                         step=1,
                         format="%d",
-                        key="cantidad"
+                        key=f"cantidad_{st.session_state['input_reset_counter']}"
                     )
                     
                     st.markdown("### Ajustes del producto")
@@ -945,7 +945,7 @@ elif seccion == "Registrar venta":
                         max_value=precio_unit * cantidad,
                         step=1.0,
                         value=0.0,
-                        key="descuento_item"
+                        key=f"descuento_item_{st.session_state['input_reset_counter']}"
                     )
 
                     extra_item = st.number_input(
@@ -953,7 +953,7 @@ elif seccion == "Registrar venta":
                         min_value=0.0,
                         step=1.0,
                         value=0.0,
-                        key="extra_item"
+                        key=f"extra_item_{st.session_state['input_reset_counter']}"
                     )
                     
                     btn_agregar = st.button("Agregar al carrito")
@@ -974,10 +974,7 @@ elif seccion == "Registrar venta":
                 st.success(
                     f"Se agregaron {cantidad} x {producto_sel} al carrito."
                 )
-                st.session_state["descuento_item"] = 0.0
-                st.session_state["extra_item"] = 0.0
-                st.session_state["cantidad"] = 1
-
+                st.session_state["input_reset_counter"] += 1
                 st.rerun()
         # ----------------------------------------
         # Carrito actual
@@ -1509,6 +1506,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
