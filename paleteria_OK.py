@@ -1311,7 +1311,64 @@ elif seccion == "Reportes":
                     file_name=f"corte_{fecha_sel_str}.csv",
                     mime="text/csv",
                 )
+                # ----------------------------------------
+                # 📦 Grafica VENTAS por categoría (Cantidad)
+                # ----------------------------------------
 
+                ventas_categoria = (
+                    df_dia
+                    .groupby("categoria", as_index=False)
+                    .agg(
+                        cantidad_vendida=("cantidad", "sum")
+                    )
+                    .sort_values("cantidad_vendida", ascending=False)
+                )
+
+                st.markdown("### 📦 Ventas por categoría (Cantidad)")
+
+                col1, col2 = st.columns([2, 1])
+
+                with col1:
+                    st.bar_chart(
+                        ventas_categoria.set_index("categoria")["cantidad_vendida"]
+                    )
+
+                with col2:
+                    st.dataframe(
+                        ventas_categoria,
+                        use_container_width=True
+                    )
+                # ----------------------------------------
+                # 💰 Grafica IINGRESOS por categoría
+                # ----------------------------------------
+
+                ingresos_categoria = (
+                    df_dia
+                    .groupby("categoria", as_index=False)
+                    .agg(
+                        total_generado=("total", "sum")
+                    )
+                    .sort_values("total_generado", ascending=False)
+                )
+
+                st.markdown("### 💰 Ingresos por categoría")
+
+                col3, col4 = st.columns([2, 1])
+
+                with col3:
+                    st.bar_chart(
+                        ingresos_categoria.set_index("categoria")["total_generado"]
+                    )
+
+                with col4:
+                    ingresos_categoria["total_generado"] = ingresos_categoria["total_generado"].apply(
+                        lambda x: f"${x:,.2f}"
+                    )
+
+                    st.dataframe(
+                        ingresos_categoria,
+                        use_container_width=True
+                    )
         # =========================
         # 2) ANÁLISIS POR RANGO
         # =========================
@@ -1556,6 +1613,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
