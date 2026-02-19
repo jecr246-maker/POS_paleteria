@@ -938,6 +938,9 @@ elif seccion == "Registrar venta":
                         step=1,
                         format="%d",
                     )
+                    
+                    st.markdown("### Ajustes del producto")
+                    
                     descuento_item = st.number_input(
                         "Descuento para este producto",
                         min_value=0.0,
@@ -963,7 +966,7 @@ elif seccion == "Registrar venta":
                         "producto": producto_sel,
                         "cantidad": int(cantidad),
                         "precio": precio_unit,
-                         "descuento": descuento_item,
+                        "descuento": descuento_item,
                         "extra": extra_item,
                     }
                 )
@@ -1501,6 +1504,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
