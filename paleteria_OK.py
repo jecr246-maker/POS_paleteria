@@ -1315,15 +1315,20 @@ elif seccion == "Reportes":
                 # 📦 Grafica VENTAS por categoría (Cantidad)
                 # ----------------------------------------
 
-                ventas_categoria = (
-                    df_dia
-                    .groupby("categoria", as_index=False)
-                    .agg(
-                        cantidad_vendida=("cantidad", "sum")
-                    )
-                    .sort_values("cantidad_vendida", ascending=False)
+                fig = px.bar(
+                    ventas_categoria,
+                    x="categoria",
+                    y="cantidad_vendida",
+                    text="cantidad_vendida",
                 )
 
+                fig.update_layout(
+                    xaxis_title="Categoría",
+                    yaxis_title="Cantidad vendida",
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+                
                 st.markdown("### 📦 Ventas por categoría (Cantidad)")
 
                 col1, col2 = st.columns([2, 1])
@@ -1613,6 +1618,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
