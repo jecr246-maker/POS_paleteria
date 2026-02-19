@@ -1199,7 +1199,7 @@ elif seccion == "Reportes":
         # 1) CORTE DEL DÍA
         # =========================
         with tab_corte:
-            st.markdown("### 🧾 Corte del día")
+            st.markdown("# 🧾 Corte del día")
 
             fecha_sel = st.date_input(
                 "Selecciona la fecha del corte",
@@ -1217,7 +1217,7 @@ elif seccion == "Reportes":
                 )
             else:
                 st.markdown(
-                    f"#### Resumen del {fecha_sel_str}"
+                    f"### Resumen del {fecha_sel_str}"
                 )
 
                 # Totales por método de pago
@@ -1273,6 +1273,8 @@ elif seccion == "Reportes":
                         "Total generado",
                         f"${producto_top['total_generado']:,.2f}"
                     )
+                st.markdown("### 🧾 Detalle de productos vendidos")
+                
                 # Detalle del día (incluye ID_PRODUCTO)
                 columnas_orden = [
                     "fecha",
@@ -1554,6 +1556,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
