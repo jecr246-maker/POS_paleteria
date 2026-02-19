@@ -819,10 +819,19 @@ if seccion == "Administrar inventario":
             },
         )
         st.plotly_chart(fig_sabor, use_container_width=True)
+
+# ----------------------------------------
+# Inicialización de estado
+# ----------------------------------------
+if "carrito" not in st.session_state:
+    st.session_state["carrito"] = []
+
+if "input_reset_counter" not in st.session_state:
+    st.session_state["input_reset_counter"] = 0
 # ============================================
 # Sección: REGISTRAR VENTA
 # ============================================
-elif seccion == "Registrar venta":
+if seccion == "Registrar venta":
     st.subheader("🧾 Registrar nueva venta de productos")
 
     # Sólo productos activos
@@ -1506,6 +1515,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
