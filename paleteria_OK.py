@@ -1425,7 +1425,7 @@ elif seccion == "Reportes":
                     )
                     ######
                     resumen_metodo = (
-                    df_dia
+                    df_rango
                     .groupby("metodo_pago", as_index=False)
                     .agg(
                         total_venta=("total", "sum"),
@@ -1442,13 +1442,13 @@ elif seccion == "Reportes":
                 st.markdown("**Totales por método de pago**")
                 st.table(resumen_metodo)
                 # ----------------------------------------
-                # 🏆 Producto más vendido del día
+                # 🏆 Producto más vendido del mes
                 # ----------------------------------------
 
-                if not df_dia.empty:
+                if not df_rango.empty:
 
                     producto_top = (
-                        df_dia
+                        df_rango
                         .groupby(["id_producto", "producto", "categoria"], as_index=False)
                         .agg(
                             cantidad_vendida=("cantidad", "sum"),
@@ -1458,7 +1458,7 @@ elif seccion == "Reportes":
                         .iloc[0]
                     )
 
-                    st.markdown("### 🏆 Producto más vendido del día")
+                    st.markdown("### 🏆 Producto más vendido del mes")
 
                     col1, col2, col3 = st.columns(3)
 
@@ -1682,6 +1682,7 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada correctamente.")
             st.rerun()
+
 
 
 
