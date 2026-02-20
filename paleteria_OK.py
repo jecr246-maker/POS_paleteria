@@ -1653,16 +1653,19 @@ elif seccion == "Reportes":
                         fig_dia_cant,
                         use_container_width=True
                     )
-###---NUEVA SECCION--- ####
+###---Seccion eliminar venta--- ####
 elif seccion == "Eliminar venta":
+
     st.subheader("🗑️ Eliminar venta registrada")
 
     df_ventas = cargar_ventas()
 
     if df_ventas.empty:
         st.info("No hay ventas registradas.")
+
     else:
-        df_ventas_reset = df_ventas.reset_index()
+        # 🔹 Resetear índice para usar selectbox
+        df_ventas_reset = df_ventas.reset_index(drop=True)
 
         st.dataframe(df_ventas_reset, use_container_width=True)
 
@@ -1675,50 +1678,35 @@ elif seccion == "Eliminar venta":
                 f"${df_ventas_reset.loc[x,'total']}"
             )
         )
-
         if st.button("Eliminar venta seleccionada"):
+
+            # 🔹 Obtener datos de la venta seleccionada
+            venta_sel = df_ventas_reset.loc[opcion]
+
+            id_producto = venta_sel["id_producto"]
+            cantidad_devuelta = int(venta_sel["cantidad"])
+
+            # 🔹 Cargar productos actuales
+            df_productos = cargar_productos()
+
+            # 🔹 Buscar producto en inventario
+            mask = df_productos["id_producto"] == id_producto
+
+            if mask.any():
+                idx = df_productos.index[mask][0]
+
+                # 🔥 Devolver stock
+                df_productos.loc[idx, "stock"] += cantidad_devuelta
+
+                # Guardar inventario actualizado
+                guardar_productos(df_productos)
+
+            else:
+                st.warning("No se encontró el producto en inventario.")
+
+            # 🔹 Eliminar venta del Sheet
             fila_sheet = int(opcion) + 2  # encabezado + base 1
             eliminar_venta_sheet(fila_sheet)
 
-            st.success("Venta eliminada correctamente.")
+            st.success("Venta eliminada y stock actualizado correctamente.")
             st.rerun()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
