@@ -673,79 +673,111 @@ if seccion == "Administrar inventario":
             int(nuevo_stock),
             nueva_activa,
         ]
-
         guardar_productos(df_productos)
         st.success("✅ Cambios guardados correctamente.")
-
     # ----------------------------------------
     # 3) Productos registrados y resumen de inventario
     # ----------------------------------------
     st.markdown("### 📋 Productos registrados y resumen de inventario")
-
     if df_productos.empty:
         st.info("No hay productos registrados todavía.")
     else:
-        # 1️⃣ Crear DataFrame ordenado
-        df_prod_orden = df_productos.sort_values(
+        # 🔹 Copia base ordenada
+        df_base = df_productos.sort_values(
             ["categoria", "nombre"]
         ).copy()
-
-        # 2️⃣ Asegurar columnas necesarias
-        if "stock_minimo" not in df_prod_orden.columns:
-            df_prod_orden["stock_minimo"] = 5
-
-        if "costo" not in df_prod_orden.columns:
-            df_prod_orden["costo"] = 0.0
-
-        # 3️⃣ Calcular estado de stock
+        # 🔹 Asegurar columnas
+        if "stock_minimo" not in df_base.columns:
+            df_base["stock_minimo"] = 5
+        if "costo" not in df_base.columns:
+            df_base["costo"] = 0.0
+        # 🔹 Utilidad bruta
+        df_base["utilidad_bruta"] = (
+            df_base["precio"] - df_base["costo"]
+        )
+        # 🔹 Estado stock
         def estado_stock(row):
-            if row["stock"] <= row["stock_minimo"]:
-                return "⚠️ Bajo"
-            return "OK"
-
-        df_prod_orden["estado_stock"] = df_prod_orden.apply(
+            if row["stock"] <= 0:
+                return "🔴 Crítico"
+            elif row["stock"] <= row["stock_minimo"]:
+                return "🟠 Bajo"
+            else:
+                return "🟢 OK"
+        df_base["estado_stock"] = df_base.apply(
             estado_stock, axis=1
         )
-
-        # 4️⃣ Alerta visual
-        productos_bajo_stock = df_prod_orden[
-            df_prod_orden["estado_stock"] == "⚠️ Bajo"
+        # ----------------------------------------
+        # 🔎 Buscador y filtro
+        # ----------------------------------------
+        col1, col2 = st.columns(2)
+        with col1:
+            busqueda = st.text_input("🔍 Buscar producto")
+        with col2:
+            categorias = ["Todas"] + sorted(df_base["categoria"].unique())
+            categoria_sel = st.selectbox("Filtrar por categoría", categorias)
+        df_filtrado = df_base.copy()
+        if categoria_sel != "Todas":
+            df_filtrado = df_filtrado[
+                df_filtrado["categoria"] == categoria_sel
+            ]
+        if busqueda:
+            df_filtrado = df_filtrado[
+                df_filtrado["nombre"].str.contains(busqueda, case=False)
+            ]
+        # ----------------------------------------
+        # 🚨 Alerta automática
+        # ----------------------------------------
+        stock_bajo = df_filtrado[
+            df_filtrado["stock"] <= df_filtrado["stock_minimo"]
         ]
-
-        if not productos_bajo_stock.empty:
+        if not stock_bajo.empty:
             st.warning(
-                f"⚠️ {len(productos_bajo_stock)} producto(s) con stock bajo. Revisa el inventario."
+                f"⚠ {len(stock_bajo)} producto(s) con stock bajo."
             )
-
-        # 5️⃣ Utilidad bruta
-        df_prod_orden["utilidad_bruta"] = (
-            df_prod_orden["precio"] - df_prod_orden["costo"]
+        # ----------------------------------------
+        # 📊 Columnas ordenadas
+        # ----------------------------------------
+        df_filtrado = df_filtrado.sort_values(
+            ["categoria", "nombre"],
+            ascending=[True, True]
         )
-
-        # 6️⃣ Columnas a mostrar (DESPUÉS de crearlas)
-        cols_orden = [
+        columnas = [
             "id_producto",
             "categoria",
             "nombre",
             "costo",
             "precio",
             "utilidad_bruta",
-            "stock",
             "stock_minimo",
-            "estado_stock",
-            "activa",
+            "stock",      # 👈 movida
+            "estado_stock"
         ]
-
-        # 7️⃣ Mostrar tabla
+        df_filtrado = df_filtrado[columnas]
+        # ----------------------------------------
+        # 🎨 Estilo visual
+        # ----------------------------------------
+        def color_stock(val):
+            if val <= 0:
+                return "background-color: #ff4d4d; color: white; font-weight: bold"
+            elif val <= 5:
+                return "background-color: #ffa64d; font-weight: bold"
+            else:
+                return "background-color: #d9f2d9"
         st.dataframe(
-            df_prod_orden[cols_orden],
+            df_filtrado.style
+                .format({
+                    "costo": "${:,.2f}",
+                    "precio": "${:,.2f}",
+                    "utilidad_bruta": "${:,.2f}",
+                })
+                .map(color_stock, subset=["stock"])
+                .hide(axis="index"),
             use_container_width=True
         )
-
-        # 8️⃣ Descargar CSV
-        csv_inv = df_prod_orden[cols_orden].to_csv(
-            index=False
-        ).encode("utf-8")
+        # ----------------------------------------
+        # 💾 Descargar CSV
+        # ----------------------------------------
+        csv_inv = df_filtrado.to_csv(index=False).encode("utf-8")
 
         st.download_button(
             "💾 Descargar inventario en CSV",
@@ -753,61 +785,73 @@ if seccion == "Administrar inventario":
             file_name="inventario_productos.csv",
             mime="text/csv",
         )
-
         # ============================
         # Totales por categoría
         # ============================
         st.markdown("#### 📊 Total de productos por categoría")
-
         resumen_cat = (
-            df_prod_orden
+            df_base
             .groupby("categoria", as_index=False)["stock"]
             .sum()
             .sort_values("stock", ascending=False)
         )
-
+        # 🔹 Total general
         total_general = int(resumen_cat["stock"].sum())
-
-        st.table(resumen_cat)
-
-        st.markdown(
-            f"**Suma total de artículos en inventario: {total_general}**"
+        # 🔹 Calcular porcentaje
+        resumen_cat["porcentaje"] = (
+            resumen_cat["stock"] / total_general * 100
         )
-
+        # ----------------------------------------
+        # 📋 Tabla formateada
+        # ----------------------------------------
+        st.dataframe(
+            resumen_cat.style.format({
+                "stock": "{:,.0f}",
+                "porcentaje": "{:.1f}%"
+            }).hide(axis="index"),
+            use_container_width=True
+        )
+        st.markdown(
+            f"### 🧮 Total general en inventario: **{total_general:,.0f} artículos**"
+        )
+        # ----------------------------------------
+        # 📊 Gráfica profesional
+        # ----------------------------------------
         fig_inv_cat = px.bar(
             resumen_cat,
             x="categoria",
             y="stock",
-            title="Total de artículos por categoría",
-            labels={
-                "categoria": "Categoría",
-                "stock": "Número de artículos",
-            },
+            text="stock"
+        )
+        fig_inv_cat.update_traces(
+            texttemplate="%{text}",
+            textposition="outside"
+        )
+        fig_inv_cat.update_layout(
+            xaxis_title="Categoría",
+            yaxis_title="Cantidad en inventario",
+            template="plotly_white"
         )
         st.plotly_chart(fig_inv_cat, use_container_width=True)
-
         # ============================
         # Artículos por producto
         # ============================
         st.markdown(
             "#### 🧃 Artículos por producto (categoría + nombre)"
         )
-
         stock_sabor = (
-            df_prod_orden
+            df_base
             .groupby(
                 ["id_producto", "categoria", "nombre"],
                 as_index=False
             )["stock"]
             .sum()
         )
-
         stock_sabor["categoria_producto"] = (
             stock_sabor["categoria"]
             + " - "
             + stock_sabor["nombre"]
         )
-
         fig_sabor = px.bar(
             stock_sabor,
             x="categoria_producto",
@@ -1710,3 +1754,4 @@ elif seccion == "Eliminar venta":
 
             st.success("Venta eliminada y stock actualizado correctamente.")
             st.rerun()
+
